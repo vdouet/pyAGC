@@ -340,6 +340,7 @@ class Memory:
             pass
 
 
+
 mem = Memory()
 
 #print(reg.erasable_mem)
