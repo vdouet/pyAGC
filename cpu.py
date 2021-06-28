@@ -19,20 +19,19 @@ class Cpu:
 
     def run(self) -> None:
 
-        wait_time = 0
-
         while True:
 
             # Execute a CPU cycle every 11.72 µs or more depending on the
             # number of MCT taken by instructions
             if self.timer.do_cycle():
 
-                print("Loop time: " + str(self.timer.elapsed_time_ns * 1e-3))
-                print("Total time: " + str(self.timer.total_cycle_time * 1e-3))
+                # print("Loop time: " + str(self.timer.elapsed_time_ns * 1e-3))
+                # print("Total time: " + str(self.timer.total_cycle_time * 1e-3))
+
                 self.timer.wait_cycle()
-                print("Wait time: " + str((self.timer.elapsed_wait * 1e-3)))
                 self.timer.added_cycle = 1
 
+                self._execute_cycle()
 
     def _execute_cycle(self) -> None:
         pass
