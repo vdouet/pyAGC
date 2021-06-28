@@ -24,12 +24,8 @@ class _Timer:
 
         start_wait = time_ns()
 
-        while True:
-
+        while self.elapsed_wait <= self.MCT_ns * nb_cycle:
             self.elapsed_wait = (time_ns() - start_wait)
-
-            if self.elapsed_wait >= self.MCT_ns * nb_cycle:
-                break
 
     def do_cycle(self) -> bool:
 
