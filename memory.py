@@ -2,11 +2,12 @@
 
 import numpy as np
 
+import registers
 from io_channels import _IO_channels
 
 
 class _Memory:
-    def __init__(self, reg: np.ndarray) -> None:
+    def __init__(self, reg: registers._Registers) -> None:
 
         # Registers
         self.reg = reg
@@ -98,13 +99,25 @@ class _Memory:
     # than handling all the different memories there.
 
     # This method is used to read data from memory.
-    def __getitem__(self, key):
+    def __getitem__(self, loc):
 
-        if key < 0o1400:
-            return self.unswitched[key]
+        # We check if we want to access switched or common-fixed memory
+        # by passing a block number.
+        if isinstance(loc, tuple):
+            block, addr = loc
+        else:
+            addr = loc
+
+        if addr < 0o1400:
+            return self.unswitched[addr]
 
     # This method is used to write to memory
-    def __setitem__(self, key, value):
+    def __setitem__(self, loc, value):
 
-        if key < 0o1400:
-            self.unswitched[key] = value
+        if isinstance(loc, tuple):
+            block, addr = loc
+        else:
+            addr = loc
+
+        if addr < 0o1400:
+            self.unswitched[addr] = value

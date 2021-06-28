@@ -1,10 +1,11 @@
 # https://www.ibiblio.org/apollo/assembly_language_manual.html#Interrupt_Processing
 
-import numpy as np
+import registers
+import memory
 
 
 class _Interrupts:
-    def __init__(self, mem: np.ndarray, reg: np.ndarray) -> None:
+    def __init__(self, mem: memory._Memory, reg: registers._Registers) -> None:
 
         self.mem = mem
         self.reg = reg
