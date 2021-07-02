@@ -1,11 +1,11 @@
 import os
 import numpy as np
 
-from registers import _Registers
-from memory import _Memory
-from io_channels import _IO_channels
-from interrupts import _Interrupts
 from timer import _Timer
+from memory import _Memory
+from registers import _Registers
+from interrupts import _Interrupts
+from io_channels import _IO_channels
 
 
 class Cpu:
@@ -19,9 +19,11 @@ class Cpu:
         self.extracode_flag = False
         self.check_parity_flag = False
 
-        # Why 32? I guess for 32 bits bu why.
+        # Why 32? I guess for 32 bits but why.
         # TODO: Investigate why / 32.
-        self.parities = np.zeros((int(40 * (0o2000 / 32))), dtype=np.uint32)
+        self.parities = np.zeros((int(self.mem.common_fixed_banks *
+                                      (self.mem.fixed_words / 32))),
+                                 dtype=np.uint32)
 
     def run(self) -> None:
 
@@ -77,9 +79,9 @@ class Cpu:
         if os.path.getsize(bin_path) % 2:
             raise ValueError("Incorrect file size (size is not even).")
 
-        # File size should fit in AGC's fixed fixed memory.
+        # File size should fit in AGC's common-fixed memory.
         file_size_word = int(os.path.getsize(bin_path) / 2)
-        if file_size_word > 36 * 0o2000:
+        if file_size_word > 36 * self.mem.fixed_words:
             raise ValueError("File size is too big for core memory.")
 
         with open(bin_path, "rb") as f:
@@ -99,7 +101,7 @@ class Cpu:
             for i in range(file_size_word):
 
                 # When we have filled one bank we go to the next one.
-                if addr == 0o2000:
+                if addr == self.mem.fixed_words:
                     try:
                         bank = next(banks_iter)
                     except StopIteration:
@@ -111,7 +113,7 @@ class Cpu:
                 # Read 2 bytes at a time.
                 bytes = f.read(2)
 
-                # Convert the bytes to a word
+                # Convert the bytes into a word
                 word = int.from_bytes(bytes, byteorder='big')
 
                 # Check if there is a parity bit set
@@ -121,9 +123,9 @@ class Cpu:
                 self.mem[bank, addr, 'fixed'] = word >> 1
 
                 # No idea what that does, taken from yaAGC.
-                # TODO: Investigate why / 32.
-                self.parities[int((bank * 0o2000 + addr) / 32)] |= \
-                    parity << (addr % 32)
+                # TODO: Investigate why / 32 and % 32.
+                self.parities[int((bank * self.mem.fixed_words + addr) / 32)] \
+                    |= parity << (addr % 32)
 
                 # If parity bits set we enable parity checking.
                 if parity and not self.check_parity_flag:

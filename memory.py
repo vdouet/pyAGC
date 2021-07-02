@@ -111,21 +111,71 @@ class _Memory:
         if addr < 0o1400:
             return self.unswitched[addr]
 
-    # This method is used to write to memory
-    def __setitem__(self, loc, value):
+    def __setitem__(self, loc: tuple, value: int):
+        """Setter method form the _Memory class.
+
+        Used to modify the value of the various memories of AGC. Might be
+        easier to directly use self.switched and self.common_fixed in the main
+        code but I wanted to use a setter method to clean other parts of the
+        code when modifying memories.
+
+        Args:
+            loc (tuple): Tuple containing information to access the memories.
+                         bank (optional), memory address and type of memory.
+            value (int): Value to add into memory.
+
+        Raises:
+            ValueError: If loc has other than 2 or 3 values to unpack.
+            TypeError: If loc is not a tuple.
+            ValueError: If addr or bank is not in the correct range.
+            ValueError: If addr or bank is not in the correct range.
+            ValueError: If specified memory is not 'erasable' or 'fixed'.
+        """
 
         if isinstance(loc, tuple):
-            bank, addr, type = loc
-        else:
-            addr = loc
 
+            if len(loc) == 3:
+                bank, addr, type = loc
+
+            elif len(loc) == 2:
+                addr, type = loc
+                bank = None
+
+            else:
+                raise ValueError("Tuple should have 2 or 3 values to unpack")
+
+        else:
+            raise TypeError("Argument should be a tuple.")
+
+        # We check which type of memory we should modify and we check if the
+        # provided address and bank are positive and in the correct range.
+        # Otherwise we raise a ValueError.
         if type == 'erasable':
-            if addr < 0o1400 and not bank:
+
+            if addr in range(self.unswitched.shape[0]) and not bank:
                 self.unswitched[addr] = value
+
+            elif bank in range(self.switched_banks) and \
+                    addr in range(self.erasable_words):
+                self.switched[bank][addr] = value
+
+            else:
+                raise ValueError("Incorrect address/bank for erasable memory.")
+
         elif type == 'fixed':
-            if addr > 0o2000 and not bank:
+
+            if addr in range(self.common_fixed.shape[1],
+                             self.fixed_fixed.shape[0]) and not bank:
+                # Remove the address offset from the original AGC's memory map.
+                addr -= self.common_fixed.shape[1]
                 self.fixed_fixed[addr] = value
-            elif bank in range(0, 40) and addr in range(0, 2000):
-                if value != 0:
-                    print(bank, addr, value)
+
+            elif bank in range(self.common_fixed_banks) and \
+                    addr in range(self.fixed_words):
                 self.common_fixed[bank][addr] = value
+
+            else:
+                raise ValueError("Incorrect address/bank for fixed memory.")
+
+        else:
+            raise ValueError("Specified memory type does not exist.")
