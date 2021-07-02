@@ -99,19 +99,78 @@ class _Memory:
     # than handling all the different memories there.
 
     # This method is used to read data from memory.
-    def __getitem__(self, loc):
+    def __getitem__(self, loc: tuple) -> np.int16:
+        """Getter method form the _Memory class.
 
-        # We check if we want to access switched or common-fixed memory
-        # by passing a block number.
+        Used to get a value from the various memories of AGC. Might be
+        easier to directly use self.switched and self.common_fixed in the main
+        code but I wanted to use a getter method to clean other parts of the
+        code when reading memories.
+
+        Args:
+            loc (tuple): Tuple containing information to access the memories.
+                         bank (optional), memory address and type of memory.
+
+        Raises:
+            ValueError: If loc has other than 2 or 3 values to unpack.
+            TypeError: If loc is not a tuple.
+            ValueError: If addr or bank is not in the correct range.
+            ValueError: If addr or bank is not in the correct range.
+            ValueError: If specified memory is not 'erasable' or 'fixed'.
+
+        Returns:
+            np.int16: The value at the specified memory address.
+        """
+
         if isinstance(loc, tuple):
-            block, addr = loc
+
+            if len(loc) == 3:
+                bank, addr, type = loc
+
+            elif len(loc) == 2:
+                addr, type = loc
+                bank = None
+
+            else:
+                raise ValueError("Tuple should have 2 or 3 values to unpack")
+
         else:
-            addr = loc
+            raise TypeError("Argument should be a tuple.")
 
-        if addr < 0o1400:
-            return self.unswitched[addr]
+        # We check which type of memory we should modify and we check if the
+        # provided address and bank are positive and in the correct range.
+        # Otherwise we raise a ValueError.
+        if type == 'erasable':
 
-    def __setitem__(self, loc: tuple, value: int):
+            if addr in range(self.unswitched.shape[0]) and not bank:
+                return self.unswitched[addr]
+
+            elif bank in range(self.switched_banks) and \
+                    addr in range(self.erasable_words):
+                return self.switched[bank][addr]
+
+            else:
+                raise ValueError("Incorrect address/bank for erasable memory.")
+
+        elif type == 'fixed':
+
+            if addr in range(self.common_fixed.shape[1],
+                             self.fixed_fixed.shape[0]) and not bank:
+                # Remove the address offset from the original AGC's memory map.
+                addr -= self.common_fixed.shape[1]
+                return self.fixed_fixed[addr]
+
+            elif bank in range(self.common_fixed_banks) and \
+                    addr in range(self.fixed_words):
+                return self.common_fixed[bank][addr]
+
+            else:
+                raise ValueError("Incorrect address/bank for erasable memory.")
+
+        else:
+            raise ValueError("Specified memory type does not exist.")
+
+    def __setitem__(self, loc: tuple, value: int) -> None:
         """Setter method form the _Memory class.
 
         Used to modify the value of the various memories of AGC. Might be
@@ -147,9 +206,6 @@ class _Memory:
         else:
             raise TypeError("Argument should be a tuple.")
 
-        # We check which type of memory we should modify and we check if the
-        # provided address and bank are positive and in the correct range.
-        # Otherwise we raise a ValueError.
         if type == 'erasable':
 
             if addr in range(self.unswitched.shape[0]) and not bank:
