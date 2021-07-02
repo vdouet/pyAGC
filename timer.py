@@ -5,9 +5,9 @@
 from time import perf_counter_ns as time_ns
 
 
-# FIXME: This timing class uses the latest available timer from the time module
-# but precision is still inconsistent, though one cycle precision is still
-# quite accurate on MacOS but horrible on Windows. But reaching precise
+# FIXME: This timing class tried the latest available timers from the time
+# module but precision is still inconsistent, though one cycle precision is
+# still quite accurate on MacOS but horrible on Windows. But reaching precise
 # accurate microsecond precision is not simple.
 class _Timer:
     def __init__(self) -> None:
@@ -15,16 +15,18 @@ class _Timer:
         self.MCT_ns = 11720  # Machine cycle : 11.72 µs
         self.elapsed_time_ns = 0
         self.cycle_start_time_ns = time_ns()
-        self.added_cycle = 0  # For instructions taking more than 1 MCT
 
+        # For instructions taking more than 1 MCT
+        self.added_cycle = 0
         self.elapsed_wait = 0
+
         self.total_cycle_time = 0
 
     def wait_cycle(self, nb_cycle: int = 1) -> None:
 
         start_wait = time_ns()
 
-        while self.elapsed_wait <= self.MCT_ns * nb_cycle:
+        while self.elapsed_wait < self.MCT_ns * nb_cycle:
             self.elapsed_wait = (time_ns() - start_wait)
 
     def do_cycle(self) -> bool:
@@ -58,5 +60,6 @@ class _Timer:
                 self.elapsed_wait = 0
 
             return True
+
         else:
             return False

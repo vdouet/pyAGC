@@ -115,9 +115,17 @@ class _Memory:
     def __setitem__(self, loc, value):
 
         if isinstance(loc, tuple):
-            block, addr = loc
+            bank, addr, type = loc
         else:
             addr = loc
 
-        if addr < 0o1400:
-            self.unswitched[addr] = value
+        if type == 'erasable':
+            if addr < 0o1400 and not bank:
+                self.unswitched[addr] = value
+        elif type == 'fixed':
+            if addr > 0o2000 and not bank:
+                self.fixed_fixed[addr] = value
+            elif bank in range(0, 40) and addr in range(0, 2000):
+                if value != 0:
+                    print(bank, addr, value)
+                self.common_fixed[bank][addr] = value
