@@ -2,15 +2,13 @@
 
 import numpy as np
 
-import registers
-from io_channels import _IO_channels
+from registers import _Registers
 
 
 class _Memory:
-    def __init__(self, reg: registers._Registers) -> None:
+    def __init__(self) -> None:
 
-        # Registers
-        self.reg = reg
+        self.reg = _Registers()
 
         # All addresses are represented as octal not binary.
 
@@ -85,13 +83,8 @@ class _Memory:
             self.common_fixed,
             (1, self.fixed_words * self.common_fixed_banks)))
 
-        # I/O Channels
-        # Slicing a numpy array creates a view on the original array. This is
-        # done because of the channel 1 and 2 overlap with register L and Q
-        # NOTE: Should the IO be outside of the memory class?
-        self.io_channels = _IO_channels(
-            self.unswitched[self.reg.L:self.reg.L+1],
-            self.unswitched[self.reg.Q:self.reg.Q+1])
+        # Initialise the program counter
+        self.unswitched[self.reg.Z] = 0o4000
 
     # Using __getitem__ and __setitem__ all work
     # on erasable and fixed memory is handled internally

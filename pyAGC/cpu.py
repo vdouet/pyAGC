@@ -13,8 +13,14 @@ class Cpu:
 
         self.timer = _Timer()
         self.reg = _Registers()
-        self.mem = _Memory(self.reg)
+        self.mem = _Memory()
         self.irq = _Interrupts(self.mem, self.reg)
+
+        # Slicing a numpy array creates a view on the original array. This is
+        # done because channel 1 and 2 overlap with register L and Q
+        self.io = _IO_channels(
+            self.mem.unswitched[self.reg.L:self.reg.L+1],
+            self.mem.unswitched[self.reg.Q:self.reg.Q+1])
 
         self.extracode_flag = False
         self.check_parity_flag = False
@@ -132,6 +138,27 @@ class Cpu:
                     self.check_parity_flag = True
 
                 addr += 1
+
+    def cpu_reset(self) -> None:
+
+        # Initialise erasable memory.
+        self.mem.switched = np.zeros(
+            (self.mem.switched_banks, self.mem.erasable_words), dtype=np.int16)
+        self.mem.unswitched = np.squeeze(np.reshape(
+            self.mem.switched[0:3], (1, self.mem.erasable_words * 3)))
+        self.mem[self.reg.Z, 'erasable']
+
+        # Initialise I/O channels.
+        self.io = _IO_channels(
+            self.mem[self.reg.L:self.reg.L+1, 'erasable'],
+            self.mem[self.reg.Q:self.reg.Q+1, 'erasable'])
+
+        # Initialise the various flags and state variables.
+        self.extracode_flag = False
+        # Should the check_parity_flag stay the same after a reset if we keep
+        # the current ROM in memory?
+        self.check_parity_flag = False
+        self.irq.enable = True
 
 
 cpu = Cpu()

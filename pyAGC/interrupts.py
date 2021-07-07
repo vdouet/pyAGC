@@ -79,13 +79,13 @@ class _Interrupts:
         self.RUPT10 = 0o4050
 
         # Enable or disable interrupt vectoring
-        self.interrupt_enable = True
+        self.enable = True
 
     def process(self, intrpt: int) -> None:
 
         # TODO: Add more conditions when interrupt request is denied (extracode
         # flag, overflow/underflow, etc.)
-        if self.interrupt_enable:
+        if self.enable:
 
             # 1. Save the content of the program counter (Z reg) into ZRUPT
             # NOTE: It says it is the return address + 1?
@@ -100,7 +100,7 @@ class _Interrupts:
 
             # 4. Execution then continues (with interrupts inhibited) until the
             # interrupt-service routine returns using the RESUME instruction.
-            self.interrupt_enable = False
+            self.enable = False
 
             return True
 
