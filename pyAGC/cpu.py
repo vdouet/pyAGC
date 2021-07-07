@@ -1,4 +1,4 @@
-"""Copyright (C) 2021  Victor Douet
+"""Copyright (C) 2021  Victor Douet <victor.douet@gmail.com>
 
 This file is part of pyAGC.
 pyAGC is free software: you can redistribute it and/or modify
