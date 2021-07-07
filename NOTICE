@@ -1,9 +1,9 @@
 PyAGC
 Copyright (C) 2021  Victor Douet <victor.douet@gmail.com>
 
-The Initial Developer of some parts of the PyAGC code, which are derived from,
-or inspired by PyAGC is Virtual AGC / yuAGC (https://github.com/virtualagc/virtualagc)
-under the GNU General Public License (GPL) version 2 or later:
+Portions of PyAGC contain code derived from, or inspired by Virtual AGC / yuAGC
+(https://github.com/virtualagc/virtualagc) under the GNU General Public License
+(GPL) version 2 or later:
 
 Copyright 2003-2005,2009,2016,2019 Ronald S. Burkey <info@sandroid.org>
 
