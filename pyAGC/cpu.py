@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License
 along with pyAGC.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
 import numpy as np
 
 from timer import _Timer
@@ -23,6 +22,7 @@ from memory import _Memory
 from registers import _Registers
 from interrupts import _Interrupts
 from io_channels import _IO_channels
+from _cpu_utils import _load_core_rope
 
 
 class Cpu:
@@ -71,90 +71,15 @@ class Cpu:
         pass
 
     def load_core_rope(self, bin_path: str) -> None:
-        """Method to load provided .bin file into AGC's memory.
-
-        Mostly taken from agc_engine_init.c from yaAGC as I haven't explored
-        how yaYUL function yet.
+        """Method that calls _load_core_rope() to load provided .bin file
+        into AGC's memory.
 
         Args:
             bin_path (str): Path to the .bin file to load.
-
-        Raises:
-            TypeError: if bin_path is null or not a str.
-            FileNotFoundError: if bin_path does not point to an existing file.
-            ValueError: if .bin file size is not even.
-            ValueError: if .bin file size to big for AGC's memory.
         """
 
-        # Check if the provided path is a string and not empty.
-        if not isinstance(bin_path, str) or not bin_path:
-            raise TypeError("Provided path is either empty or not a string.")
-
-        # If the provided file does not end with the .bin extension, add it.
-        if not bin_path.lower().endswith(".bin"):
-            bin_path = bin_path + ".bin"
-
-        # Check if file exist.
-        if not os.path.isfile(bin_path):
-            raise FileNotFoundError(f"Error: file does not exist '{bin_path}'")
-
-        # File size should be an even number of bytes.
-        if os.path.getsize(bin_path) % 2:
-            raise ValueError("Incorrect file size (size is not even).")
-
-        # File size should fit in AGC's common-fixed memory.
-        file_size_word = int(os.path.getsize(bin_path) / 2)
-        if file_size_word > 36 * self.mem.fixed_words:
-            raise ValueError("File size is too big for core memory.")
-
-        with open(bin_path, "rb") as f:
-
-            addr = 0
-
-            # Create a list corresponding to bank indexes 0 to 35
-            banks = [i for i in range(36)]
-
-            # yaYUL orders the banks in the bin file as 2, 3, 0, 1, 4, ..., 35.
-            # So we need to reorder the first 4 elements of this list.
-            banks[0], banks[1], banks[2], banks[3] = 2, 3, 0, 1
-
-            banks_iter = iter(banks)
-            bank = next(banks_iter)
-
-            for i in range(file_size_word):
-
-                # When we have filled one bank we go to the next one.
-                if addr == self.mem.fixed_words:
-                    try:
-                        bank = next(banks_iter)
-                    except StopIteration:
-                        print("Core rope is larger than AGC's core memory.")
-
-                    # We changed bank so we reset the address in this bank.
-                    addr = 0
-
-                # Read 2 bytes at a time.
-                bytes = f.read(2)
-
-                # Convert the bytes into a word
-                word = int.from_bytes(bytes, byteorder='big')
-
-                # Check if there is a parity bit set
-                parity = word & 1
-
-                # Convert the 16-bit word to 15 bits and add it into memory
-                self.mem[bank, addr, 'fixed'] = word >> 1
-
-                # No idea what that does, taken from yaAGC.
-                # TODO: Investigate why / 32 and % 32.
-                self.parities[int((bank * self.mem.fixed_words + addr) / 32)] \
-                    |= parity << (addr % 32)
-
-                # If parity bits set we enable parity checking.
-                if parity and not self.check_parity_flag:
-                    self.check_parity_flag = True
-
-                addr += 1
+        _load_core_rope(bin_path, self.mem, self.check_parity_flag,
+                        self.parities)
 
     def cpu_reset(self) -> None:
 
